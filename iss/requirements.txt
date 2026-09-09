@@ -1,0 +1,6 @@
+flask
+requests
+prometheus-client
+redis
+Werkzeug
+schedule
