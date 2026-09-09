@@ -1,0 +1,85 @@
+services:  
+
+    iss:
+        build: ./iss
+        image: iss
+        container_name: iss
+        env_file:
+            - ./iss/app.env
+        ports:
+            - 46664:46664
+        logging:
+            driver: "json-file"
+            options:
+                max-file: ${LOG_EXPIRE}
+                max-size: ${LOG_SEGMENT}
+
+    redis:
+        image: redis/redis-stack-server:latest
+        container_name: redis
+        restart: unless-stopped
+        ports:
+            - "6379:6379"
+        volumes:
+            - redis-data:/data
+        environment:
+            - REDIS_ARGS=--dir /data --appendonly yes #--loglevel debug
+        logging:
+            driver: "json-file"
+            options:
+                max-file: ${LOG_EXPIRE}
+                max-size: ${LOG_SEGMENT}
+    
+    redis-insight:
+        image: redis/redisinsight:latest
+        container_name: redis-insight
+        restart: unless-stopped
+        ports:
+            - "5540:5540" # Redis Insights UI
+        volumes:
+            - redis-insight-data:/data
+        depends_on:
+            - redis
+        logging:
+            driver: "json-file"
+            options:
+                max-file: ${LOG_EXPIRE}
+                max-size: ${LOG_SEGMENT}
+    
+    prometheus:
+        image: prom/prometheus:latest
+        container_name: prometheus
+        volumes:
+            - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+            - prometheus_data:/prometheus
+        ports:
+        - "9090:9090" # Prometheus UI
+        restart: unless-stopped
+        depends_on:
+        - iss
+        logging:
+            driver: "json-file"
+            options:
+                max-file: ${LOG_EXPIRE}
+                max-size: ${LOG_SEGMENT}
+    
+    grafana:
+        image: grafana/grafana-oss:latest
+        container_name: grafana
+        restart: unless-stopped
+        ports:
+            - "3000:3000" # Grafana UI
+        volumes:
+            - grafana-data:/var/lib/grafana
+        logging:
+            driver: "json-file"
+            options:
+                max-file: ${LOG_EXPIRE}
+                max-size: ${LOG_SEGMENT}
+    
+
+volumes:
+  redis-data:
+  redis-insight-data:
+  prometheus_data:
+  grafana-data:
